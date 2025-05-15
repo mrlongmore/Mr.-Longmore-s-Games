@@ -1,0 +1,1556 @@
+fnaf.html
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL Night Watch - FNAF-Style Learning Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f0f0f;
+            color: #f0f0f0;
+            overflow-x: hidden;
+        }
+        
+        .creepy-font {
+            font-family: 'Creepster', cursive;
+        }
+        
+        .office-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            background-color: #1a1a1a;
+            overflow: hidden;
+        }
+        
+        .door {
+            position: absolute;
+            height: 100%;
+            width: 15%;
+            background-color: #333;
+            transition: transform 0.5s ease;
+            z-index: 20;
+        }
+        
+        .door-left {
+            left: 0;
+            transform-origin: left;
+            transform: translateX(-100%);
+        }
+        
+        .door-right {
+            right: 0;
+            transform-origin: right;
+            transform: translateX(100%);
+        }
+        
+        .door-closed-left {
+            transform: translateX(0);
+        }
+        
+        .door-closed-right {
+            transform: translateX(0);
+        }
+        
+        .monster {
+            position: absolute;
+            height: 80%;
+            width: 20%;
+            bottom: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 10;
+            visibility: hidden; /* Completely hide monsters by default */
+        }
+        
+        .monster-left {
+            left: 5%;
+        }
+        
+        .monster-right {
+            right: 5%;
+        }
+        
+        .monster-visible {
+            opacity: 0; /* Still invisible until illuminated or final warning */
+            visibility: visible; /* Element exists but not visible */
+        }
+        
+        .monster-warning {
+            opacity: 0.4; /* More visible in final 2 seconds (increased from 0.2) */
+            animation: pulse-warning 0.5s infinite alternate; /* Add pulsing animation */
+        }
+        
+        @keyframes pulse-warning {
+            from { opacity: 0.4; }
+            to { opacity: 0.6; }
+        }
+        
+        .warning-indicator {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 8px solid rgba(255, 0, 0, 0.5);
+            box-sizing: border-box;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 25;
+        }
+        
+        .warning-indicator-left {
+            left: 0;
+            border-right: none;
+        }
+        
+        .warning-indicator-right {
+            right: 0;
+            border-left: none;
+        }
+        
+        .warning-active {
+            opacity: 1;
+            animation: flash-warning 0.5s infinite alternate;
+        }
+        
+        @keyframes flash-warning {
+            from { opacity: 0.3; }
+            to { opacity: 0.7; }
+        }
+        
+        .light-beam {
+            position: absolute;
+            height: 100%;
+            width: 25%;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(255,255,200,0.4) 0%, rgba(255,255,200,0) 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .light-beam-left {
+            left: 0;
+            transform: translateX(0%);
+        }
+        
+        .light-beam-right {
+            right: 0;
+            transform: translateX(0%);
+        }
+        
+        .light-active {
+            opacity: 1;
+        }
+        
+        .monster-illuminated {
+            opacity: 1 !important; /* Fully visible when illuminated */
+            filter: brightness(1); /* Show monster clearly when light is on */
+            z-index: 15;
+        }
+        
+        .jumpscare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease;
+        }
+        
+        .jumpscare-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .door-timer {
+            position: absolute;
+            bottom: 10px;
+            width: 10%;
+            height: 5px;
+            background-color: #4ade80;
+            transition: width 0.1s linear;
+        }
+        
+        .door-timer-left {
+            left: 2.5%;
+        }
+        
+        .door-timer-right {
+            right: 2.5%;
+        }
+        
+        .monster-timer {
+            position: absolute;
+            bottom: 20px;
+            width: 10%;
+            height: 8px;
+            background-color: #ef4444;
+            transition: width 0.1s linear;
+            z-index: 26;
+            opacity: 0;
+        }
+        
+        .monster-timer-left {
+            left: 2.5%;
+        }
+        
+        .monster-timer-right {
+            right: 2.5%;
+        }
+        
+        .monster-timer-active {
+            opacity: 1;
+        }
+        
+        .asl-word {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .asl-word:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+        
+        .asl-word.clicked-once {
+            background-color: #3b82f6;
+        }
+        
+        .asl-word.clicked-twice {
+            background-color: #10b981;
+        }
+        
+        .asl-word.error {
+            background-color: #ef4444;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .battery-token {
+            width: 30px;
+            height: 45px;
+            background-color: #4ade80;
+            border-radius: 5px 5px 0 0;
+            position: relative;
+            display: inline-block;
+            margin: 0 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .battery-token::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 10px;
+            width: 10px;
+            height: 5px;
+            background-color: #4ade80;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .battery-token.empty {
+            background-color: #6b7280;
+        }
+        
+        .battery-token.empty::after {
+            background-color: #6b7280;
+        }
+        
+        .certificate {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='%23f0f0f0' d='M30,20 L70,20 L80,30 L80,80 L20,80 L20,30 Z' /%3E%3C/svg%3E");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        .copy-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .static-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .camera-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 4;
+        }
+        
+        .camera-effect::after {
+            content: 'REC';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #ff0000;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0.7;
+            z-index: 4;
+        }
+        
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        .asl-container {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 30%;
+            display: flex;
+            justify-content: center;
+            z-index: 30;
+        }
+        
+        .light-timer {
+            position: absolute;
+            bottom: 5px;
+            width: 10%;
+            height: 5px;
+            background-color: #facc15;
+            transition: width 0.1s linear;
+        }
+        
+        .light-timer-left {
+            left: 2.5%;
+        }
+        
+        .light-timer-right {
+            right: 2.5%;
+        }
+        
+        .screenshot-instructions {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .light-btn-active {
+            background-color: #f59e0b !important;
+        }
+        
+        .danger-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(220, 38, 38, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .danger-alert-active {
+            opacity: 1;
+            animation: pulse-alert 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse-alert {
+            from { opacity: 0.8; }
+            to { opacity: 1; }
+        }
+        
+        .cooldown-indicator {
+            position: absolute;
+            bottom: 35px;
+            width: 10%;
+            height: 5px;
+            background-color: #3b82f6;
+            transition: width 0.1s linear;
+            z-index: 26;
+            opacity: 0;
+        }
+        
+        .cooldown-indicator-left {
+            left: 2.5%;
+        }
+        
+        .cooldown-indicator-right {
+            right: 2.5%;
+        }
+        
+        .cooldown-active {
+            opacity: 1;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.inset-0{inset:0px}.z-50{z-index:50}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-2{margin-right:0.5rem}.mr-3{margin-right:0.75rem}.mt-12{margin-top:3rem}.mt-2{margin-top:0.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.hidden{display:none}.h-20{height:5rem}.h-5{height:1.25rem}.h-full{height:100%}.h-1{height:0.25rem}.w-40{width:10rem}.w-5{width:1.25rem}.w-full{width:100%}.max-w-2xl{max-width:42rem}.max-w-md{max-width:28rem}.list-decimal{list-style-type:decimal}.list-disc{list-style-type:disc}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.rounded-lg{border-radius:0.5rem}.rounded{border-radius:0.25rem}.border-2{border-width:2px}.border-8{border-width:8px}.border-t-2{border-top-width:2px}.border-double{border-style:double}.border-amber-700{--tw-border-opacity:1;border-color:rgb(180 83 9 / var(--tw-border-opacity, 1))}.border-gray-400{--tw-border-opacity:1;border-color:rgb(156 163 175 / var(--tw-border-opacity, 1))}.border-red-600{--tw-border-opacity:1;border-color:rgb(220 38 38 / var(--tw-border-opacity, 1))}.bg-amber-600{--tw-bg-opacity:1;background-color:rgb(217 119 6 / var(--tw-bg-opacity, 1))}.bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.bg-gray-800{--tw-bg-opacity:1;background-color:rgb(31 41 55 / var(--tw-bg-opacity, 1))}.bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1))}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-yellow-500{--tw-bg-opacity:1;background-color:rgb(234 179 8 / var(--tw-bg-opacity, 1))}.bg-gray-700{--tw-bg-opacity:1;background-color:rgb(55 65 81 / var(--tw-bg-opacity, 1))}.bg-green-400{--tw-bg-opacity:1;background-color:rgb(74 222 128 / var(--tw-bg-opacity, 1))}.bg-opacity-80{--tw-bg-opacity:0.8}.bg-opacity-90{--tw-bg-opacity:0.9}.p-10{padding:2.5rem}.p-4{padding:1rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.px-8{padding-left:2rem;padding-right:2rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.pl-5{padding-left:1.25rem}.pt-2{padding-top:0.5rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-6xl{font-size:3.75rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14 / var(--tw-text-opacity, 1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15 / var(--tw-text-opacity, 1))}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity, 1))}.text-green-400{--tw-text-opacity:1;color:rgb(74 222 128 / var(--tw-text-opacity, 1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-400{--tw-text-opacity:1;color:rgb(250 204 21 / var(--tw-text-opacity, 1))}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.hover\:bg-amber-700:hover{--tw-bg-opacity:1;background-color:rgb(180 83 9 / var(--tw-bg-opacity, 1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-red-700:hover{--tw-bg-opacity:1;background-color:rgb(185 28 28 / var(--tw-bg-opacity, 1))}.hover\:bg-yellow-600:hover{--tw-bg-opacity:1;background-color:rgb(202 138 4 / var(--tw-bg-opacity, 1))}</style></head>
+<body class="bg-gray-900">
+    <!-- Warning Modal -->
+    <div id="warning-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 max-w-2xl rounded-lg border-2 border-red-600">
+            <h2 class="text-3xl font-bold text-red-500 mb-4 creepy-font">⚠️ Warning: ASL Night Watch</h2>
+            <p class="mb-4">This game contains mild horror elements inspired by Five Nights at Freddy's. The animatronics will cause a game over if they catch you, but there are no graphic images.</p>
+            
+            <h3 class="text-xl font-bold text-yellow-400 mt-6 mb-2">How to Play:</h3>
+            <ul class="list-disc pl-5 mb-4 space-y-2">
+                <li>Watch both doors for approaching animatronics</li>
+                <li>Click the light buttons to toggle lights on/off (costs 1 battery token every 2 seconds)</li>
+                <li>Monsters are <strong>completely invisible</strong> unless you shine a light on them</li>
+                <li>Monsters become <strong>visible with red warning borders</strong> in the final 2 seconds before attacking</li>
+                <li>A red timer bar will appear when a monster is present</li>
+                <li>Click the door buttons to close doors when you see a monster</li>
+                <li>You have <strong>5 seconds</strong> to close the door or you'll get jumpscared</li>
+                <li>Each door closure uses one battery token and lasts 5 seconds</li>
+                <li><strong>Closing a door will scare away any monster</strong> and prevent new ones for 2 seconds</li>
+                <li>Collect battery tokens by practicing ASL vocabulary:</li>
+                <ul class="list-disc pl-5 mt-2 mb-2">
+                    <li><strong class="text-blue-400">VERBS:</strong> Click <strong>ONCE</strong> (OPEN-BOOK, CLOSE-BOOK, etc.)</li>
+                    <li><strong class="text-green-400">NOUNS:</strong> Click <strong>TWICE</strong> (BOOK, CHAIR, WINDOW, etc.)</li>
+                </ul>
+                <li>You have <strong>1.5 seconds</strong> to click the correct number of times</li>
+                <li>Wrong clicks will cause the card to shake and turn red</li>
+            </ul>
+            
+            <div class="mt-6 flex justify-center">
+                <button id="start-game" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 creepy-font text-xl">
+                    I Understand - Start Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="">
+        <!-- Header -->
+        <header class="bg-gray-800 p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold creepy-font text-red-500">ASL Night Watch</h1>
+            <div class="flex items-center space-x-4">
+                <div class="text-lg">Night: <span id="night-counter" class="font-bold">1</span></div>
+                <div class="text-lg">Time: <span id="time-counter" class="font-bold">6:00 PM</span></div>
+            </div>
+        </header>
+
+        <!-- Game Office -->
+        <div class="office-container camera-effect">
+            <div class="static-effect"></div>
+            <div class="vignette"></div>
+            
+            <!-- Warning Indicators -->
+            <div id="warning-indicator-left" class="warning-indicator warning-indicator-left"></div>
+            <div id="warning-indicator-right" class="warning-indicator warning-indicator-right"></div>
+            
+            <!-- Danger Alerts -->
+            <div id="danger-alert-left" class="danger-alert">DANGER LEFT!</div>
+            <div id="danger-alert-right" class="danger-alert">DANGER RIGHT!</div>
+            
+            <!-- Light Beams -->
+            <div id="light-beam-left" class="light-beam light-beam-left light-active"></div>
+            <div id="light-beam-right" class="light-beam light-beam-right"></div>
+            
+            <!-- Left Door and Monster -->
+            <div id="door-left" class="door door-left"></div>
+            <div id="door-timer-left" class="door-timer door-timer-left" style="width: 14%; background-color: rgb(239, 68, 68);"></div>
+            <div id="light-timer-left" class="light-timer light-timer-left" style="width: 70%; background-color: rgb(250, 204, 21);"></div>
+            <div id="monster-timer-left" class="monster-timer monster-timer-left" style="width: 66%;"></div>
+            <div id="cooldown-indicator-left" class="cooldown-indicator cooldown-indicator-left" style="width: 0%;"></div>
+            <div id="monster-left" class="monster monster-left">
+                <svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg" class="h-full w-full">
+                    <path d="M50,20 Q70,20 70,40 Q90,40 90,60 Q70,60 70,80 Q90,100 90,120 Q70,140 70,160 Q50,180 30,160 Q30,140 10,120 Q10,100 30,80 Q30,60 10,60 Q10,40 30,40 Q30,20 50,20 Z" fill="#4a2c2a"></path>
+                    <circle cx="35" cy="50" r="5" fill="#ff0000"></circle>
+                    <circle cx="65" cy="50" r="5" fill="#ff0000"></circle>
+                    <path d="M40,70 Q50,80 60,70" stroke="#000" stroke-width="2" fill="none"></path>
+                    <path d="M30,90 Q50,100 70,90" stroke="#000" stroke-width="3" fill="none"></path>
+                </svg>
+            </div>
+            
+            <!-- Right Door and Monster -->
+            <div id="door-right" class="door door-right"></div>
+            <div id="door-timer-right" class="door-timer door-timer-right" style="width: 0%; background-color: rgb(239, 68, 68);"></div>
+            <div id="light-timer-right" class="light-timer light-timer-right" style="width: 0%; background-color: rgb(250, 204, 21);"></div>
+            <div id="monster-timer-right" class="monster-timer monster-timer-right" style="width: 66%;"></div>
+            <div id="cooldown-indicator-right" class="cooldown-indicator cooldown-indicator-right" style="width: 0%;"></div>
+            <div id="monster-right" class="monster monster-right">
+                <svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg" class="h-full w-full">
+                    <path d="M50,20 Q70,20 70,40 Q90,40 90,60 Q70,60 70,80 Q90,100 90,120 Q70,140 70,160 Q50,180 30,160 Q30,140 10,120 Q10,100 30,80 Q30,60 10,60 Q10,40 30,40 Q30,20 50,20 Z" fill="#2a4a2c"></path>
+                    <circle cx="35" cy="50" r="5" fill="#00ff00"></circle>
+                    <circle cx="65" cy="50" r="5" fill="#00ff00"></circle>
+                    <path d="M30,70 Q50,60 70,70" stroke="#000" stroke-width="2" fill="none"></path>
+                    <path d="M30,90 Q50,100 70,90" stroke="#000" stroke-width="3" fill="none"></path>
+                </svg>
+            </div>
+            
+            <!-- ASL Word Cards Container -->
+            <div id="asl-container" class="asl-container"><div class="asl-word bg-gray-700 clicked-once error" data-word="DRINK-NOUN" data-type="noun" data-clicks="0" data-position="0" style="left: 27.7142%; top: 47.1275%; transform: translateX(-50%) translateY(-50%) rotate(0.602257deg); animation-delay: 1.5746s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">DRINK-NOUN</span></div><div class="asl-word bg-gray-700 clicked-once error" data-word="FOOD" data-type="noun" data-clicks="0" data-position="2" style="left: 76.3217%; top: 51.4532%; transform: translateX(-50%) translateY(-50%) rotate(0.984209deg); animation-delay: 1.08978s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">FOOD</span></div><div class="asl-word bg-gray-700" data-word="CLOSE-DOOR" data-type="verb" data-clicks="0" data-position="3" style="left: 27.4102%; top: 150.964%; transform: translateX(-50%) translateY(-50%) rotate(2.81135deg); animation-delay: 1.26349s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">CLOSE-DOOR</span></div><div class="asl-word bg-gray-700" data-word="LIGHT" data-type="noun" data-clicks="0" data-position="4" style="left: 52.2166%; top: 149.764%; transform: translateX(-50%) translateY(-50%) rotate(0.979245deg); animation-delay: 0.749724s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">LIGHT</span></div><div class="asl-word bg-gray-700" data-word="TURN-ON-LIGHT" data-type="verb" data-clicks="0" data-position="5" style="left: 72.0091%; top: 147.389%; transform: translateX(-50%) translateY(-50%) rotate(-1.76344deg); animation-delay: 0.394496s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">TURN-ON-LIGHT</span></div><div class="asl-word bg-gray-700" data-word="DRINK-VERB" data-type="verb" data-clicks="0" data-position="1" style="left: 50.9853%; top: 50.526%; transform: translateX(-50%) translateY(-50%) rotate(1.27606deg); animation-delay: 0.698806s;"><div class="h-1 bg-green-400 w-full mb-2 rounded"></div><span class="text-center px-2">DRINK-VERB</span></div></div>
+        </div>
+
+        <!-- Door Control Buttons and Battery Tokens -->
+        <div class="flex flex-col p-4 bg-gray-800">
+            <div class="flex justify-between mb-4">
+                <div class="flex space-x-2">
+                    <button id="left-light-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 light-btn-active">Turn Off Light</button>
+                    <button id="left-door-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Close Left Door</button>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="right-door-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Close Right Door</button>
+                    <button id="right-light-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Right Light</button>
+                </div>
+            </div>
+            
+            <div class="flex justify-center items-center">
+                <div class="mr-3 font-bold">Battery Tokens:</div>
+                <div id="battery-tokens" class="flex"><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div><div class="battery-token"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jumpscare Overlay -->
+    <div id="jumpscare" class="jumpscare">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+            <path d="M100,20 Q140,20 140,60 Q180,60 180,100 Q140,140 140,180 Q100,180 60,180 Q60,140 20,100 Q20,60 60,60 Q60,20 100,20 Z" fill="#4a0000"></path>
+            <circle cx="70" cy="80" r="15" fill="#ff0000"></circle>
+            <circle cx="130" cy="80" r="15" fill="#ff0000"></circle>
+            <path d="M60,120 Q100,150 140,120" stroke="#000" stroke-width="5" fill="none"></path>
+        </svg>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over" class="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50 hidden">
+        <h2 class="text-6xl font-bold text-red-600 mb-8 creepy-font">Game Over</h2>
+        <p class="text-2xl mb-8">You were caught by an animatronic!</p>
+        <button id="retry-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-xl">
+            Try Again
+        </button>
+    </div>
+
+    <!-- Victory Screen with Certificate -->
+    <div id="victory" class="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
+        <div class="bg-gray-100 text-gray-900 p-10 rounded-lg shadow-2xl max-w-2xl w-full certificate">
+            <div class="border-8 border-double border-amber-700 p-8">
+                <div class="text-center">
+                    <h2 class="text-4xl font-bold text-amber-800 mb-4">Certificate of Achievement</h2>
+                    <p class="text-xl mb-2">This certifies that</p>
+                    <p class="text-3xl font-bold mb-2 text-amber-900">ASL Student</p>
+                    <p class="text-xl mb-6">has successfully completed</p>
+                    <p class="text-2xl font-bold mb-8 text-amber-800">ASL Night Watch Challenge</p>
+                    
+                    <div class="flex justify-between items-center mt-12">
+                        <div class="text-center">
+                            <div class="border-t-2 border-gray-400 pt-2 w-40">
+                                <p class="text-sm">Date</p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <svg viewBox="0 0 100 50" class="w-40 h-20">
+                                <path d="M10,25 C20,10 30,40 40,25 C50,10 60,40 70,25 C80,10 90,40 95,25" stroke="#5c2a00" stroke-width="2" fill="none"></path>
+                            </svg>
+                            <div class="border-t-2 border-gray-400 pt-2 w-40">
+                                <p class="text-sm">Signature</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screenshot-instructions bg-gray-800 text-white p-4 rounded-lg mt-4 max-w-md">
+            <h3 class="font-bold mb-2">📸 How to Save Your Certificate:</h3>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>On your Chromebook, press <strong>Ctrl + Window Switch key</strong> (or <strong>Ctrl + F5</strong>)</li>
+                <li>Select the <strong>Screenshot</strong> option</li>
+                <li>Choose <strong>Partial screenshot</strong></li>
+                <li>Click and drag to capture your certificate</li>
+                <li>Find your screenshot in the Downloads folder</li>
+            </ol>
+        </div>
+        <button id="play-again-button" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-xl mt-4">
+            Play Again
+        </button>
+    </div>
+
+    <!-- Copy Code Button -->
+    <button id="copy-code-button" class="copy-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+        </svg>
+        Copy Code
+    </button>
+
+    <script>
+        // Game state
+        const gameState = {
+            batteryTokens: 3,
+            maxBatteryTokens: 10,
+            isGameOver: false,
+            isLeftDoorClosed: false,
+            isRightDoorClosed: false,
+            isLeftLightOn: false,
+            isRightLightOn: false,
+            leftDoorTimer: 0,
+            rightDoorTimer: 0,
+            leftLightTimer: 0,
+            rightLightTimer: 0,
+            night: 1,
+            time: 0, // 0 = 12 AM, 360 = 6 AM (game win)
+            monsterLeftVisible: false,
+            monsterRightVisible: false,
+            monsterLeftTimer: null,
+            monsterRightTimer: null,
+            monsterLeftWarningActive: false,
+            monsterRightWarningActive: false,
+            monsterLeftTimeRemaining: 5000, // Track exact time remaining
+            monsterRightTimeRemaining: 5000, // Track exact time remaining
+            leftCooldown: 0, // Cooldown timer for left door (in ms)
+            rightCooldown: 0, // Cooldown timer for right door (in ms)
+            timeUpdateInterval: null,
+            monsterCheckInterval: null,
+            doorTimerInterval: null,
+            lightTimerInterval: null,
+            monsterTimerInterval: null,
+            cooldownInterval: null
+        };
+
+        // ASL Words
+        const nouns = ['BOOK', 'CHAIR', 'WINDOW', 'DOOR', 'DRAWER', 'LIGHT', 'FOOD', 'DRINK-NOUN', 'FOOD'];
+        const verbs = ['OPEN-BOOK', 'CLOSE-BOOK', 'OPEN-WINDOW', 'CLOSE-WINDOW', 'OPEN-DOOR', 'CLOSE-DOOR', 'OPEN-DRAWER', 'CLOSE-DRAWER', 'TURN-ON-LIGHT', 'TURN-OFF-LIGHT', 'SIT', 'DRINK-VERB', 'EAT'];
+
+        // DOM Elements
+        const doorLeft = document.getElementById('door-left');
+        const doorRight = document.getElementById('door-right');
+        const doorTimerLeft = document.getElementById('door-timer-left');
+        const doorTimerRight = document.getElementById('door-timer-right');
+        const lightTimerLeft = document.getElementById('light-timer-left');
+        const lightTimerRight = document.getElementById('light-timer-right');
+        const monsterTimerLeft = document.getElementById('monster-timer-left');
+        const monsterTimerRight = document.getElementById('monster-timer-right');
+        const cooldownIndicatorLeft = document.getElementById('cooldown-indicator-left');
+        const cooldownIndicatorRight = document.getElementById('cooldown-indicator-right');
+        const lightBeamLeft = document.getElementById('light-beam-left');
+        const lightBeamRight = document.getElementById('light-beam-right');
+        const monsterLeft = document.getElementById('monster-left');
+        const monsterRight = document.getElementById('monster-right');
+        const warningIndicatorLeft = document.getElementById('warning-indicator-left');
+        const warningIndicatorRight = document.getElementById('warning-indicator-right');
+        const dangerAlertLeft = document.getElementById('danger-alert-left');
+        const dangerAlertRight = document.getElementById('danger-alert-right');
+        const leftDoorBtn = document.getElementById('left-door-btn');
+        const rightDoorBtn = document.getElementById('right-door-btn');
+        const leftLightBtn = document.getElementById('left-light-btn');
+        const rightLightBtn = document.getElementById('right-light-btn');
+        const batteryTokensContainer = document.getElementById('battery-tokens');
+        const aslContainer = document.getElementById('asl-container');
+        const jumpscare = document.getElementById('jumpscare');
+        const gameOverScreen = document.getElementById('game-over');
+        const victoryScreen = document.getElementById('victory');
+        const warningModal = document.getElementById('warning-modal');
+        const gameContainer = document.getElementById('game-container');
+        const startGameBtn = document.getElementById('start-game');
+        const retryButton = document.getElementById('retry-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const nightCounter = document.getElementById('night-counter');
+        const timeCounter = document.getElementById('time-counter');
+        const copyCodeButton = document.getElementById('copy-code-button');
+
+        // Audio elements (placeholders for you to add URLs later)
+        const backgroundMusic = new Audio(https://www.epidemicsound.com/track/Fk1b7Zxhle/);
+        backgroundMusic.loop = true;
+        // Add your background music URL here
+        // backgroundMusic.src = "your-background-music-url.mp3";
+
+        const jumpscareSound = new Audio(https://www.epidemicsound.com/sound-effects/tracks/e919c12f-d9c2-4411-9512-192619f277bf/);
+        // Add your jumpscare sound URL here
+        // jumpscareSound.src = "your-jumpscare-sound-url.mp3";
+
+        // Start game when button is clicked
+        startGameBtn.addEventListener('click', () => {
+            warningModal.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            startGame();
+        });
+
+        // Retry button
+        retryButton.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            resetGame();
+            startGame();
+        });
+
+        // Play again button
+        playAgainButton.addEventListener('click', () => {
+            victoryScreen.classList.add('hidden');
+            resetGame();
+            startGame();
+        });
+
+        // Door control
+        leftDoorBtn.addEventListener('click', () => toggleDoor('left'));
+        rightDoorBtn.addEventListener('click', () => toggleDoor('right'));
+
+        // Light control - now toggle buttons
+        leftLightBtn.addEventListener('click', () => toggleLight('left'));
+        rightLightBtn.addEventListener('click', () => toggleLight('right'));
+
+        // Copy code button
+        copyCodeButton.addEventListener('click', function() {
+            // Get the HTML content of the entire document
+            const htmlContent = document.documentElement.outerHTML;
+            
+            // Create a temporary textarea element to copy the code
+            const textarea = document.createElement('textarea');
+            textarea.value = htmlContent;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            
+            // Select and copy the text
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Remove the textarea
+            document.body.removeChild(textarea);
+            
+            // Change button text temporarily to indicate success
+            const originalText = copyCodeButton.innerHTML;
+            copyCodeButton.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Copied!
+            `;
+            
+            // Reset button text after 2 seconds
+            setTimeout(function() {
+                copyCodeButton.innerHTML = originalText;
+            }, 2000);
+        });
+
+        function startGame() {
+            // Start background music
+            try {
+                backgroundMusic.play();
+            } catch (e) {
+                console.log("Background music couldn't play automatically. User interaction required.");
+            }
+            
+            // Initialize game
+            updateBatteryTokens();
+            populateASLWords();
+            
+            // Start game loops
+            gameState.timeUpdateInterval = setInterval(updateTime, 500); // Twice as fast (2 seconds per minute)
+            gameState.monsterCheckInterval = setInterval(checkForMonsters, 3000);
+            gameState.doorTimerInterval = setInterval(updateDoorTimers, 100);
+            gameState.lightTimerInterval = setInterval(updateLightTimers, 100);
+            gameState.monsterTimerInterval = setInterval(updateMonsterTimers, 100);
+            gameState.cooldownInterval = setInterval(updateCooldowns, 100);
+        }
+
+        function resetGame() {
+            // Reset game state
+            gameState.batteryTokens = 3;
+            gameState.isGameOver = false;
+            gameState.isLeftDoorClosed = false;
+            gameState.isRightDoorClosed = false;
+            gameState.isLeftLightOn = false;
+            gameState.isRightLightOn = false;
+            gameState.leftDoorTimer = 0;
+            gameState.rightDoorTimer = 0;
+            gameState.leftLightTimer = 0;
+            gameState.rightLightTimer = 0;
+            gameState.night = 1;
+            gameState.time = 0;
+            gameState.monsterLeftVisible = false;
+            gameState.monsterRightVisible = false;
+            gameState.monsterLeftWarningActive = false;
+            gameState.monsterRightWarningActive = false;
+            gameState.monsterLeftTimeRemaining = 5000;
+            gameState.monsterRightTimeRemaining = 5000;
+            gameState.leftCooldown = 0;
+            gameState.rightCooldown = 0;
+            
+            // Clear any existing timers
+            clearInterval(gameState.timeUpdateInterval);
+            clearInterval(gameState.monsterCheckInterval);
+            clearInterval(gameState.doorTimerInterval);
+            clearInterval(gameState.lightTimerInterval);
+            clearInterval(gameState.monsterTimerInterval);
+            clearInterval(gameState.cooldownInterval);
+            clearTimeout(gameState.monsterLeftTimer);
+            clearTimeout(gameState.monsterRightTimer);
+            
+            // Reset UI
+            doorLeft.classList.remove('door-closed-left');
+            doorRight.classList.remove('door-closed-right');
+            doorTimerLeft.style.width = '0%';
+            doorTimerRight.style.width = '0%';
+            lightTimerLeft.style.width = '0%';
+            lightTimerRight.style.width = '0%';
+            monsterTimerLeft.style.width = '100%';
+            monsterTimerRight.style.width = '100%';
+            monsterTimerLeft.classList.remove('monster-timer-active');
+            monsterTimerRight.classList.remove('monster-timer-active');
+            cooldownIndicatorLeft.classList.remove('cooldown-active');
+            cooldownIndicatorRight.classList.remove('cooldown-active');
+            cooldownIndicatorLeft.style.width = '100%';
+            cooldownIndicatorRight.style.width = '100%';
+            lightBeamLeft.classList.remove('light-active');
+            lightBeamRight.classList.remove('light-active');
+            monsterLeft.classList.remove('monster-visible', 'monster-illuminated', 'monster-warning');
+            monsterRight.classList.remove('monster-visible', 'monster-illuminated', 'monster-warning');
+            warningIndicatorLeft.classList.remove('warning-active');
+            warningIndicatorRight.classList.remove('warning-active');
+            dangerAlertLeft.classList.remove('danger-alert-active');
+            dangerAlertRight.classList.remove('danger-alert-active');
+            leftDoorBtn.textContent = 'Close Left Door';
+            rightDoorBtn.textContent = 'Close Right Door';
+            leftDoorBtn.disabled = false;
+            rightDoorBtn.disabled = false;
+            leftLightBtn.classList.remove('light-btn-active');
+            rightLightBtn.classList.remove('light-btn-active');
+            leftLightBtn.textContent = 'Left Light';
+            rightLightBtn.textContent = 'Right Light';
+            updateBatteryTokens();
+            nightCounter.textContent = gameState.night;
+            updateTimeDisplay();
+            
+            // Clear ASL container
+            aslContainer.innerHTML = '';
+        }
+
+        function toggleDoor(side) {
+            if (gameState.batteryTokens <= 0) return;
+            
+            if (side === 'left') {
+                if (!gameState.isLeftDoorClosed) {
+                    // Close the door
+                    gameState.isLeftDoorClosed = true;
+                    doorLeft.classList.add('door-closed-left');
+                    leftDoorBtn.textContent = 'Door Closing...';
+                    leftDoorBtn.disabled = true;
+                    
+                    // Use a battery token
+                    gameState.batteryTokens--;
+                    updateBatteryTokens();
+                    
+                    // Set door timer (5 seconds)
+                    gameState.leftDoorTimer = 5000;
+                    
+                    // If monster is present, scare it away
+                    if (gameState.monsterLeftVisible) {
+                        hideMonster('left');
+                        
+                        // Set cooldown to prevent immediate reappearance
+                        gameState.leftCooldown = 2000; // 2 seconds cooldown
+                        cooldownIndicatorLeft.classList.add('cooldown-active');
+                        cooldownIndicatorLeft.style.width = '100%';
+                    }
+                    
+                    // Auto open after 5 seconds
+                    setTimeout(() => {
+                        if (gameState.isLeftDoorClosed) {
+                            gameState.isLeftDoorClosed = false;
+                            doorLeft.classList.remove('door-closed-left');
+                            leftDoorBtn.textContent = 'Close Left Door';
+                            leftDoorBtn.disabled = false;
+                            gameState.leftDoorTimer = 0;
+                        }
+                    }, 5000);
+                }
+            } else {
+                if (!gameState.isRightDoorClosed) {
+                    // Close the door
+                    gameState.isRightDoorClosed = true;
+                    doorRight.classList.add('door-closed-right');
+                    rightDoorBtn.textContent = 'Door Closing...';
+                    rightDoorBtn.disabled = true;
+                    
+                    // Use a battery token
+                    gameState.batteryTokens--;
+                    updateBatteryTokens();
+                    
+                    // Set door timer (5 seconds)
+                    gameState.rightDoorTimer = 5000;
+                    
+                    // If monster is present, scare it away
+                    if (gameState.monsterRightVisible) {
+                        hideMonster('right');
+                        
+                        // Set cooldown to prevent immediate reappearance
+                        gameState.rightCooldown = 2000; // 2 seconds cooldown
+                        cooldownIndicatorRight.classList.add('cooldown-active');
+                        cooldownIndicatorRight.style.width = '100%';
+                    }
+                    
+                    // Auto open after 5 seconds
+                    setTimeout(() => {
+                        if (gameState.isRightDoorClosed) {
+                            gameState.isRightDoorClosed = false;
+                            doorRight.classList.remove('door-closed-right');
+                            rightDoorBtn.textContent = 'Close Right Door';
+                            rightDoorBtn.disabled = false;
+                            gameState.rightDoorTimer = 0;
+                        }
+                    }, 5000);
+                }
+            }
+        }
+
+        function toggleLight(side) {
+            if (gameState.isGameOver) return;
+            
+            if (side === 'left') {
+                if (!gameState.isLeftLightOn) {
+                    // Check if we have battery tokens
+                    if (gameState.batteryTokens <= 0) return;
+                    
+                    // Turn on light
+                    gameState.isLeftLightOn = true;
+                    lightBeamLeft.classList.add('light-active');
+                    leftLightBtn.classList.add('light-btn-active');
+                    leftLightBtn.textContent = 'Turn Off Light';
+                    
+                    // Illuminate monster if present
+                    if (gameState.monsterLeftVisible) {
+                        monsterLeft.classList.add('monster-illuminated');
+                    }
+                    
+                    // Start light timer (2 seconds per token)
+                    gameState.leftLightTimer = 2000;
+                } else {
+                    // Turn off light
+                    gameState.isLeftLightOn = false;
+                    lightBeamLeft.classList.remove('light-active');
+                    leftLightBtn.classList.remove('light-btn-active');
+                    leftLightBtn.textContent = 'Left Light';
+                    monsterLeft.classList.remove('monster-illuminated');
+                    gameState.leftLightTimer = 0;
+                    lightTimerLeft.style.width = '0%';
+                }
+            } else {
+                if (!gameState.isRightLightOn) {
+                    // Check if we have battery tokens
+                    if (gameState.batteryTokens <= 0) return;
+                    
+                    // Turn on light
+                    gameState.isRightLightOn = true;
+                    lightBeamRight.classList.add('light-active');
+                    rightLightBtn.classList.add('light-btn-active');
+                    rightLightBtn.textContent = 'Turn Off Light';
+                    
+                    // Illuminate monster if present
+                    if (gameState.monsterRightVisible) {
+                        monsterRight.classList.add('monster-illuminated');
+                    }
+                    
+                    // Start light timer (2 seconds per token)
+                    gameState.rightLightTimer = 2000;
+                } else {
+                    // Turn off light
+                    gameState.isRightLightOn = false;
+                    lightBeamRight.classList.remove('light-active');
+                    rightLightBtn.classList.remove('light-btn-active');
+                    rightLightBtn.textContent = 'Right Light';
+                    monsterRight.classList.remove('monster-illuminated');
+                    gameState.rightLightTimer = 0;
+                    lightTimerRight.style.width = '0%';
+                }
+            }
+        }
+
+        function updateLightTimers() {
+            if (gameState.isGameOver) return;
+            
+            // Update left light timer
+            if (gameState.isLeftLightOn) {
+                if (gameState.leftLightTimer > 0) {
+                    gameState.leftLightTimer -= 100;
+                    const percentLeft = (gameState.leftLightTimer / 2000) * 100;
+                    lightTimerLeft.style.width = `${percentLeft}%`;
+                    
+                    // Change color as time runs out
+                    if (percentLeft < 25) {
+                        lightTimerLeft.style.backgroundColor = '#ef4444'; // Red
+                    } else if (percentLeft < 50) {
+                        lightTimerLeft.style.backgroundColor = '#facc15'; // Yellow
+                    } else {
+                        lightTimerLeft.style.backgroundColor = '#facc15'; // Yellow (default for light)
+                    }
+                } else {
+                    // Use a battery token
+                    gameState.batteryTokens--;
+                    updateBatteryTokens();
+                    
+                    // If no more tokens, turn off light
+                    if (gameState.batteryTokens <= 0) {
+                        toggleLight('left');
+                    } else {
+                        // Reset timer
+                        gameState.leftLightTimer = 2000;
+                    }
+                }
+            }
+            
+            // Update right light timer
+            if (gameState.isRightLightOn) {
+                if (gameState.rightLightTimer > 0) {
+                    gameState.rightLightTimer -= 100;
+                    const percentLeft = (gameState.rightLightTimer / 2000) * 100;
+                    lightTimerRight.style.width = `${percentLeft}%`;
+                    
+                    // Change color as time runs out
+                    if (percentLeft < 25) {
+                        lightTimerRight.style.backgroundColor = '#ef4444'; // Red
+                    } else if (percentLeft < 50) {
+                        lightTimerRight.style.backgroundColor = '#facc15'; // Yellow
+                    } else {
+                        lightTimerRight.style.backgroundColor = '#facc15'; // Yellow (default for light)
+                    }
+                } else {
+                    // Use a battery token
+                    gameState.batteryTokens--;
+                    updateBatteryTokens();
+                    
+                    // If no more tokens, turn off light
+                    if (gameState.batteryTokens <= 0) {
+                        toggleLight('right');
+                    } else {
+                        // Reset timer
+                        gameState.rightLightTimer = 2000;
+                    }
+                }
+            }
+        }
+
+        function updateDoorTimers() {
+            if (gameState.isGameOver) return;
+            
+            // Update left door timer
+            if (gameState.leftDoorTimer > 0) {
+                gameState.leftDoorTimer -= 100;
+                const percentLeft = (gameState.leftDoorTimer / 5000) * 100;
+                doorTimerLeft.style.width = `${percentLeft}%`;
+                
+                // Change color as time runs out
+                if (percentLeft < 25) {
+                    doorTimerLeft.style.backgroundColor = '#ef4444'; // Red
+                } else if (percentLeft < 50) {
+                    doorTimerLeft.style.backgroundColor = '#facc15'; // Yellow
+                } else {
+                    doorTimerLeft.style.backgroundColor = '#4ade80'; // Green
+                }
+            }
+            
+            // Update right door timer
+            if (gameState.rightDoorTimer > 0) {
+                gameState.rightDoorTimer -= 100;
+                const percentLeft = (gameState.rightDoorTimer / 5000) * 100;
+                doorTimerRight.style.width = `${percentLeft}%`;
+                
+                // Change color as time runs out
+                if (percentLeft < 25) {
+                    doorTimerRight.style.backgroundColor = '#ef4444'; // Red
+                } else if (percentLeft < 50) {
+                    doorTimerRight.style.backgroundColor = '#facc15'; // Yellow
+                } else {
+                    doorTimerRight.style.backgroundColor = '#4ade80'; // Green
+                }
+            }
+        }
+
+        function updateCooldowns() {
+            if (gameState.isGameOver) return;
+            
+            // Update left cooldown
+            if (gameState.leftCooldown > 0) {
+                gameState.leftCooldown -= 100;
+                const percentLeft = (gameState.leftCooldown / 2000) * 100;
+                cooldownIndicatorLeft.style.width = `${percentLeft}%`;
+                
+                if (gameState.leftCooldown <= 0) {
+                    cooldownIndicatorLeft.classList.remove('cooldown-active');
+                }
+            }
+            
+            // Update right cooldown
+            if (gameState.rightCooldown > 0) {
+                gameState.rightCooldown -= 100;
+                const percentLeft = (gameState.rightCooldown / 2000) * 100;
+                cooldownIndicatorRight.style.width = `${percentLeft}%`;
+                
+                if (gameState.rightCooldown <= 0) {
+                    cooldownIndicatorRight.classList.remove('cooldown-active');
+                }
+            }
+        }
+
+        function updateMonsterTimers() {
+            if (gameState.isGameOver) return;
+            
+            // Update left monster timer
+            if (gameState.monsterLeftVisible && !gameState.isLeftDoorClosed) {
+                // Decrease time remaining
+                gameState.monsterLeftTimeRemaining -= 100;
+                
+                // Update timer bar
+                const percentLeft = (gameState.monsterLeftTimeRemaining / 5000) * 100;
+                monsterTimerLeft.style.width = `${percentLeft}%`;
+                monsterTimerLeft.classList.add('monster-timer-active');
+                
+                // Update warning state
+                updateMonsterWarning('left');
+                
+                // Check if time's up
+                if (gameState.monsterLeftTimeRemaining <= 0) {
+                    triggerJumpscare();
+                }
+            } else if (!gameState.monsterLeftVisible) {
+                // Hide timer if no monster
+                monsterTimerLeft.classList.remove('monster-timer-active');
+            }
+            
+            // Update right monster timer
+            if (gameState.monsterRightVisible && !gameState.isRightDoorClosed) {
+                // Decrease time remaining
+                gameState.monsterRightTimeRemaining -= 100;
+                
+                // Update timer bar
+                const percentLeft = (gameState.monsterRightTimeRemaining / 5000) * 100;
+                monsterTimerRight.style.width = `${percentLeft}%`;
+                monsterTimerRight.classList.add('monster-timer-active');
+                
+                // Update warning state
+                updateMonsterWarning('right');
+                
+                // Check if time's up
+                if (gameState.monsterRightTimeRemaining <= 0) {
+                    triggerJumpscare();
+                }
+            } else if (!gameState.monsterRightVisible) {
+                // Hide timer if no monster
+                monsterTimerRight.classList.remove('monster-timer-active');
+            }
+        }
+
+        function updateMonsterWarning(side) {
+            if (side === 'left') {
+                // Check if we're in the warning period (last 2 seconds)
+                if (gameState.monsterLeftTimeRemaining <= 2000) {
+                    // Activate warning
+                    if (!gameState.monsterLeftWarningActive) {
+                        gameState.monsterLeftWarningActive = true;
+                        monsterLeft.classList.add('monster-warning');
+                        warningIndicatorLeft.classList.add('warning-active');
+                        dangerAlertLeft.classList.add('danger-alert-active');
+                    }
+                } else {
+                    // Deactivate warning
+                    gameState.monsterLeftWarningActive = false;
+                    monsterLeft.classList.remove('monster-warning');
+                    warningIndicatorLeft.classList.remove('warning-active');
+                    dangerAlertLeft.classList.remove('danger-alert-active');
+                }
+            } else {
+                // Check if we're in the warning period (last 2 seconds)
+                if (gameState.monsterRightTimeRemaining <= 2000) {
+                    // Activate warning
+                    if (!gameState.monsterRightWarningActive) {
+                        gameState.monsterRightWarningActive = true;
+                        monsterRight.classList.add('monster-warning');
+                        warningIndicatorRight.classList.add('warning-active');
+                        dangerAlertRight.classList.add('danger-alert-active');
+                    }
+                } else {
+                    // Deactivate warning
+                    gameState.monsterRightWarningActive = false;
+                    monsterRight.classList.remove('monster-warning');
+                    warningIndicatorRight.classList.remove('warning-active');
+                    dangerAlertRight.classList.remove('danger-alert-active');
+                }
+            }
+        }
+
+        function updateBatteryTokens() {
+            // Clear container
+            batteryTokensContainer.innerHTML = '';
+            
+            // Add battery tokens
+            for (let i = 0; i < gameState.maxBatteryTokens; i++) {
+                const token = document.createElement('div');
+                token.className = i < gameState.batteryTokens ? 'battery-token' : 'battery-token empty';
+                batteryTokensContainer.appendChild(token);
+            }
+        }
+
+        function updateTime() {
+            if (gameState.isGameOver) return;
+            
+            gameState.time += 1;
+            updateTimeDisplay();
+            
+            // Check for victory (6 AM)
+            if (gameState.time >= 360) {
+                winNight();
+            }
+        }
+
+        function updateTimeDisplay() {
+            // Convert time to clock format (12 AM to 6 AM)
+            const hour = Math.floor(gameState.time / 60) + 12;
+            const displayHour = hour > 12 ? hour - 12 : hour;
+            const ampm = hour >= 12 && hour < 24 ? "PM" : "AM";
+            timeCounter.textContent = `${displayHour}:00 ${ampm}`;
+        }
+
+        function checkForMonsters() {
+            if (gameState.isGameOver) return;
+            
+            // Chance increases as the night progresses
+            const baseChance = 0.2 + (gameState.time / 360) * 0.3;
+            
+            // Left monster check - only if not on cooldown and door is open
+            if (!gameState.monsterLeftVisible && !gameState.isLeftDoorClosed && gameState.leftCooldown <= 0) {
+                if (Math.random() < baseChance) {
+                    showMonster('left');
+                }
+            }
+            
+            // Right monster check - only if not on cooldown and door is open
+            if (!gameState.monsterRightVisible && !gameState.isRightDoorClosed && gameState.rightCooldown <= 0) {
+                if (Math.random() < baseChance) {
+                    showMonster('right');
+                }
+            }
+        }
+
+        function showMonster(side) {
+            if (side === 'left') {
+                // Don't show if door is closed or on cooldown
+                if (gameState.isLeftDoorClosed || gameState.leftCooldown > 0) return;
+                
+                gameState.monsterLeftVisible = true;
+                gameState.monsterLeftWarningActive = false;
+                gameState.monsterLeftTimeRemaining = 5000; // 5 seconds
+                monsterLeft.classList.add('monster-visible');
+                monsterLeft.classList.remove('monster-warning');
+                warningIndicatorLeft.classList.remove('warning-active');
+                dangerAlertLeft.classList.remove('danger-alert-active');
+                
+                // Only illuminate if light is on
+                if (gameState.isLeftLightOn) {
+                    monsterLeft.classList.add('monster-illuminated');
+                }
+                
+                // Show timer bar
+                monsterTimerLeft.classList.add('monster-timer-active');
+                monsterTimerLeft.style.width = '100%';
+            } else {
+                // Don't show if door is closed or on cooldown
+                if (gameState.isRightDoorClosed || gameState.rightCooldown > 0) return;
+                
+                gameState.monsterRightVisible = true;
+                gameState.monsterRightWarningActive = false;
+                gameState.monsterRightTimeRemaining = 5000; // 5 seconds
+                monsterRight.classList.add('monster-visible');
+                monsterRight.classList.remove('monster-warning');
+                warningIndicatorRight.classList.remove('warning-active');
+                dangerAlertRight.classList.remove('danger-alert-active');
+                
+                // Only illuminate if light is on
+                if (gameState.isRightLightOn) {
+                    monsterRight.classList.add('monster-illuminated');
+                }
+                
+                // Show timer bar
+                monsterTimerRight.classList.add('monster-timer-active');
+                monsterTimerRight.style.width = '100%';
+            }
+        }
+
+        function hideMonster(side) {
+            if (side === 'left') {
+                gameState.monsterLeftVisible = false;
+                gameState.monsterLeftWarningActive = false;
+                gameState.monsterLeftTimeRemaining = 5000;
+                monsterLeft.classList.remove('monster-visible', 'monster-illuminated', 'monster-warning');
+                warningIndicatorLeft.classList.remove('warning-active');
+                dangerAlertLeft.classList.remove('danger-alert-active');
+                monsterTimerLeft.classList.remove('monster-timer-active');
+            } else {
+                gameState.monsterRightVisible = false;
+                gameState.monsterRightWarningActive = false;
+                gameState.monsterRightTimeRemaining = 5000;
+                monsterRight.classList.remove('monster-visible', 'monster-illuminated', 'monster-warning');
+                warningIndicatorRight.classList.remove('warning-active');
+                dangerAlertRight.classList.remove('danger-alert-active');
+                monsterTimerRight.classList.remove('monster-timer-active');
+            }
+        }
+
+        function triggerJumpscare() {
+            if (gameState.isGameOver) return;
+            
+            gameState.isGameOver = true;
+            
+            // Turn off lights
+            if (gameState.isLeftLightOn) toggleLight('left');
+            if (gameState.isRightLightOn) toggleLight('right');
+            
+            // Play jumpscare sound
+            try {
+                jumpscareSound.play();
+            } catch (e) {
+                console.log("Jumpscare sound couldn't play automatically.");
+            }
+            
+            // Show jumpscare animation
+            jumpscare.classList.add('jumpscare-active');
+            
+            // Show game over screen after jumpscare
+            setTimeout(() => {
+                jumpscare.classList.remove('jumpscare-active');
+                gameOverScreen.classList.remove('hidden');
+                
+                // Stop background music
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }, 1000);
+        }
+
+        function winNight() {
+            gameState.isGameOver = true;
+            
+            // Stop all intervals
+            clearInterval(gameState.timeUpdateInterval);
+            clearInterval(gameState.monsterCheckInterval);
+            clearInterval(gameState.doorTimerInterval);
+            clearInterval(gameState.lightTimerInterval);
+            clearInterval(gameState.monsterTimerInterval);
+            clearInterval(gameState.cooldownInterval);
+            
+            // Turn off lights
+            if (gameState.isLeftLightOn) toggleLight('left');
+            if (gameState.isRightLightOn) toggleLight('right');
+            
+            // Show victory screen
+            victoryScreen.classList.remove('hidden');
+            
+            // Stop background music
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
+        }
+
+        function populateASLWords() {
+            // Clear existing words
+            aslContainer.innerHTML = '';
+            
+            // Create a mix of nouns and verbs
+            const allWords = [...nouns, ...verbs];
+            const shuffledWords = shuffleArray(allWords).slice(0, 6); // Show only 6 words
+            
+            // Define positions for the floating blocks in top middle area
+            const positions = [
+                {x: 25, y: 50}, {x: 50, y: 50}, {x: 75, y: 50},
+                {x: 25, y: 150}, {x: 50, y: 150}, {x: 75, y: 150}
+            ];
+            
+            shuffledWords.forEach((word, index) => {
+                const wordType = nouns.includes(word) ? 'noun' : 'verb';
+                const wordElement = document.createElement('div');
+                
+                // Position with slight randomness
+                const basePos = positions[index];
+                const randomX = basePos.x + (Math.random() * 6 - 3);
+                const randomY = basePos.y + (Math.random() * 6 - 3);
+                
+                // Set styles and position
+                wordElement.className = `asl-word bg-gray-700`;
+                wordElement.style.left = `${randomX}%`;
+                wordElement.style.top = `${randomY}%`;
+                wordElement.style.transform = `translateX(-50%) translateY(-50%) rotate(${Math.random() * 6 - 3}deg)`;
+                wordElement.style.animationDelay = `${Math.random() * 2}s`;
+                
+                wordElement.dataset.word = word;
+                wordElement.dataset.type = wordType;
+                wordElement.dataset.clicks = '0';
+                wordElement.dataset.position = index; // Store position index
+                
+                // Add green color indicator for all words (regardless of type)
+                const colorIndicator = document.createElement('div');
+                colorIndicator.className = 'h-1 bg-green-400 w-full mb-2 rounded';
+                wordElement.appendChild(colorIndicator);
+                
+                const wordText = document.createElement('span');
+                wordText.textContent = word;
+                wordText.className = 'text-center px-2';
+                wordElement.appendChild(wordText);
+                
+                wordElement.addEventListener('click', handleWordClick);
+                aslContainer.appendChild(wordElement);
+            });
+        }
+
+        function handleWordClick(event) {
+            const wordElement = event.currentTarget;
+            const wordType = wordElement.dataset.type;
+            const currentClicks = parseInt(wordElement.dataset.clicks) + 1;
+            const position = parseInt(wordElement.dataset.position);
+            
+            wordElement.dataset.clicks = currentClicks;
+            
+            // Remove any existing classes
+            wordElement.classList.remove('clicked-once', 'clicked-twice', 'error');
+            
+            // Add appropriate class based on number of clicks
+            if (currentClicks === 1) {
+                wordElement.classList.add('clicked-once');
+            } else if (currentClicks === 2) {
+                wordElement.classList.add('clicked-twice');
+            }
+            
+            // Check if correct after a short delay
+            setTimeout(() => {
+                const finalClicks = parseInt(wordElement.dataset.clicks);
+                let isCorrect = false;
+                
+                if (wordType === 'verb' && finalClicks === 1) {
+                    isCorrect = true;
+                } else if (wordType === 'noun' && finalClicks === 2) {
+                    isCorrect = true;
+                }
+                
+                if (isCorrect) {
+                    // Add battery token and replace word
+                    if (gameState.batteryTokens < gameState.maxBatteryTokens) {
+                        gameState.batteryTokens++;
+                        updateBatteryTokens();
+                    }
+                    
+                    // Replace this word with a new one at the same position
+                    replaceWord(wordElement, position);
+                } else {
+                    // Show error
+                    wordElement.classList.add('error');
+                    wordElement.dataset.clicks = '0';
+                }
+            }, 1500);
+        }
+
+        function replaceWord(oldWordElement, position) {
+            // Get all current words
+            const currentWords = Array.from(document.querySelectorAll('.asl-word')).map(el => el.dataset.word);
+            
+            // Find a word that's not currently displayed
+            const allWords = [...nouns, ...verbs];
+            const availableWords = allWords.filter(word => !currentWords.includes(word));
+            
+            if (availableWords.length === 0) return;
+            
+            // Get a random new word
+            const newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+            const wordType = nouns.includes(newWord) ? 'noun' : 'verb';
+            
+            // Create new word element
+            const newWordElement = document.createElement('div');
+            
+            // Copy position from old element
+            const left = oldWordElement.style.left;
+            const top = oldWordElement.style.top;
+            
+            // Set styles and position
+            newWordElement.className = `asl-word bg-gray-700`;
+            newWordElement.style.left = left;
+            newWordElement.style.top = top;
+            newWordElement.style.transform = `translateX(-50%) translateY(-50%) rotate(${Math.random() * 6 - 3}deg)`;
+            newWordElement.style.animationDelay = `${Math.random() * 2}s`;
+            
+            newWordElement.dataset.word = newWord;
+            newWordElement.dataset.type = wordType;
+            newWordElement.dataset.clicks = '0';
+            newWordElement.dataset.position = position;
+            
+            // Add green color indicator for all words (regardless of type)
+            const colorIndicator = document.createElement('div');
+            colorIndicator.className = 'h-1 bg-green-400 w-full mb-2 rounded';
+            newWordElement.appendChild(colorIndicator);
+            
+            const wordText = document.createElement('span');
+            wordText.textContent = newWord;
+            wordText.className = 'text-center px-2';
+            newWordElement.appendChild(wordText);
+            
+            newWordElement.addEventListener('click', handleWordClick);
+            
+            // Replace old word with new one
+            aslContainer.removeChild(oldWordElement);
+            aslContainer.appendChild(newWordElement);
+        }
+
+        // Utility function to shuffle array
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94011cd491cc7c8b',t:'MTc0NzI5NjE0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
+</body></html>
